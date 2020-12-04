@@ -38,8 +38,6 @@ input {
   &placeholder {
     color: #666360;
   }
-
-
 }
 
 > svg {

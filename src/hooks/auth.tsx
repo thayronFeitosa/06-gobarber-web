@@ -1,11 +1,12 @@
 import React, {
-  createContext, useCallback, useState, useContext,
+  createContext, useCallback, useContext, useState,
 } from 'react';
+
 import api from '../services/api';
 
 interface AuthState {
   token: string;
-  user: Object;
+  user: object;
 }
 
 interface SignInCredentials {
@@ -13,15 +14,15 @@ interface SignInCredentials {
   password: string;
 }
 
-interface AuthContexData {
-  user: Object;
-  sigin(credentials: SignInCredentials): Promise<void>;
-  signOuth(): void;
+interface AuthContextData {
+  user: object;
+  signIn(credentials: SignInCredentials): Promise<void>;
+  signOut(): void;
 }
 
-const AuthContex = createContext<AuthContexData>({} as AuthContexData);
+const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 
-export const AuthProvider: React.FC = ({ children }) => {
+const AuthProvider: React.FC = ({ children }) => {
   const [data, setData] = useState<AuthState>(() => {
     const token = localStorage.getItem('@GoBarber:token');
     const user = localStorage.getItem('@GoBarber:user');
@@ -32,34 +33,43 @@ export const AuthProvider: React.FC = ({ children }) => {
 
     return {} as AuthState;
   });
-  const sigin = useCallback(async ({ email, password }) => {
+
+  const signIn = useCallback(async ({ email, password }) => {
     const response = await api.post('sessions', {
       email,
       password,
     });
-    const { user, token } = response.data;
+
+    const { token, user } = response.data;
+
     localStorage.setItem('@GoBarber:token', token);
     localStorage.setItem('@GoBarber:user', JSON.stringify(user));
+
     setData({ token, user });
   }, []);
 
-  const signOuth = useCallback(() => {
+  const signOut = useCallback(() => {
     localStorage.removeItem('@GoBarber:token');
     localStorage.removeItem('@GoBarber:user');
+
     setData({} as AuthState);
   }, []);
 
   return (
-    <AuthContex.Provider value={{ user: data.user, sigin, signOuth }}>
+    <AuthContext.Provider value={{ user: data.user, signIn, signOut }}>
       {children}
-    </AuthContex.Provider>
+    </AuthContext.Provider>
   );
 };
 
-export function useAuth(): AuthContexData {
-  const content = useContext(AuthContex);
-  if (!content) {
-    throw new Error('useAuth must be used within a AuthProvider');
+function useAuth(): AuthContextData {
+  const context = useContext(AuthContext);
+
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
   }
-  return content;
+
+  return context;
 }
+
+export { AuthProvider, useAuth };
